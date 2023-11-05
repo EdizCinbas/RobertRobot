@@ -3,12 +3,6 @@
 #include <math.h>
 #include "graphics.h"
 
-// Globally required variables, set in main
-int rectSize, buffer, waitTime; 
-
-double radian(double degrees){
-    return (degrees * (M_PI / 180));
-}
 
 typedef struct robot
 {
@@ -17,6 +11,15 @@ typedef struct robot
     int direction;
 } Robot;
 
+// Globally required variables, set in main
+int rectSize, buffer, waitTime;
+
+Robot robert = {0, 0, 0};
+Robot *robertPtr = &robert;
+
+double radian(double degrees){
+    return (degrees * (M_PI / 180));
+}
 
 void drawBackground(int gridSize){
     background();
@@ -27,7 +30,7 @@ void drawBackground(int gridSize){
     } //Nested for loop draws SIZExSIZE grid of rectangles   
 } 
 
-void drawRobot(struct robot *robertPtr, int offset){
+void drawRobot(int offset){
     foreground();
     int centreX, centreY, xCoords[3], yCoords[3];
     double directionRad;
@@ -78,10 +81,10 @@ void drawRobot(struct robot *robertPtr, int offset){
 
 }
 
-void forward(struct robot *robertPtr){
+void forward(){
     for(int i = 1; i < 11; i++){
         clear();
-        drawRobot(robertPtr, i);
+        drawRobot(i);
         sleep(waitTime);
     }
     if(robertPtr->direction == 0){
@@ -95,20 +98,20 @@ void forward(struct robot *robertPtr){
     }
 }
 
-void left(struct robot *robertPtr){
+void left(){
     for(int i = 0; i < 18; i++){
         robertPtr->direction -= 5;
         clear();
-        drawRobot(robertPtr, 0);
+        drawRobot(0);
         sleep(waitTime);
     }
 }
 
-void right(struct robot *robertPtr){
+void right(){
     for(int i = 0; i < 18; i++){
         robertPtr->direction += 5;
         clear();
-        drawRobot(robertPtr, 0);
+        drawRobot(0);
         sleep(waitTime);
     }
 }
@@ -118,9 +121,7 @@ int main(void){
     int randomPlacement = 0; //Allows for random placement of objects 
 
     waitTime = 25; 
-    Robot robert = {0, 0, 0};
-    Robot *robertPtr = &robert;
-
+    
     // Input Parameters
     screenResolutionY = 982; 
     gridSize = 8; 
@@ -134,17 +135,15 @@ int main(void){
     setWindowSize(drawableSize, drawableSize); 
     drawBackground(gridSize);
 
-    drawRobot(robertPtr, 0);
-
+    drawRobot(0);
     
-    // right(robertPtr);
-    // forward(robertPtr);
-    // forward(robertPtr);
-    // forward(robertPtr);
-    // right(robertPtr);
-    // forward(robertPtr);
-    // left(robertPtr);
-    
+    right();
+    forward();
+    forward();
+    forward();
+    right();
+    forward();
+    left();
 
 
     return 0; 
