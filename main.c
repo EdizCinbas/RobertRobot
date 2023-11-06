@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include "graphics.h"
 
 
@@ -18,7 +19,7 @@ typedef struct block
 } Block; 
 
 // Globally required variables, set in main
-int rectSize, buffer, waitTime, wallArraySize;
+int rectSize, buffer, waitTime, numberOfWalls;
 Robot *robertPtr;
 Block *blocksPtr;
 
@@ -90,28 +91,44 @@ void drawRobot(int offset){
 
 }
 
-Block* initBlocks(int size, Block home, Block marker){
+Block* initBlocks(int numberOfWalls, Block home, Block marker, char wallLocations[]){
     Block *Blocks;
-    Blocks = (Block*)calloc(size+2, sizeof(Block));
+    Blocks = (Block*)calloc(numberOfWalls+2, sizeof(Block));
     Blocks[0] = home;
     Blocks[1] = marker; 
 
+    // Populating the walls by separating coordinates from Str
+    char *token = strtok(wallLocations, "."); 
+    for(int i = 2; i < numberOfWalls + 2; i ++){
+        Block temp = {0, 0};
+        temp.x = atoi(token = strtok(NULL, "."));
+        temp.y= atoi(token = strtok(NULL, "."));
+        Blocks[i] = temp; 
+    }
+
     return Blocks;
+}
+
+Robot nextPosition(){
+    Robot temp = {robertPtr->x, robertPtr->y, robertPtr->direction};
+    if(robertPtr->direction == 0){
+        temp.y -= 1;
+    }else if(robertPtr->direction == 90){
+        temp.x += 1;
+    }else if(robertPtr->direction == 180){
+        temp.y += 1;
+    }else if(robertPtr->direction == 270){
+        temp.x -= 1;
+    }
+    return temp;
 }
 
 void forward(){
     for(int i = 1; i < 11; i++){
         drawRobot(i);
     }
-    if(robertPtr->direction == 0){
-        robertPtr->y -= 1;
-    }else if(robertPtr->direction == 90){
-        robertPtr->x += 1;
-    }else if(robertPtr->direction == 180){
-        robertPtr->y += 1;
-    }else if(robertPtr->direction == 270){
-        robertPtr->x -= 1;
-    }
+    *robertPtr = nextPosition();
+    
 }
 
 void left(){
@@ -144,18 +161,29 @@ int atHome(){
     }
 }
 
+int canMoveForward(){
+    Robot nextPos = nextPosition();
+    for(int i = 2; i < numberOfWalls + 2; i++){
+        if(blocksPtr[i].x == nextPos.x && blocksPtr[i].y == nextPos.y){
+            return 0;
+        }
+    }
+    return 1;
+}
+
 int main(void){
     int screenResolutionY, drawableSize, gridSize; 
     int randomPlacement = 0; //Allows for random placement of objects 
 
     waitTime = 20; 
-    wallArraySize = 1;
+    numberOfWalls = 1;
     
     // Input Parameters
     screenResolutionY = 982; 
     gridSize = 8; 
     Block home = {0, 0};
     Block marker = {1, 0};
+    char wallLocations[] = "-.0.0";
 
     // Calculated Parameters
     drawableSize = screenResolutionY - 210; // 210 pixels of the screen is drawApp unusable space
@@ -163,10 +191,10 @@ int main(void){
     buffer = ((drawableSize % rectSize) + rectSize) / 2; 
 
     // Environment Set-Up
-    Robot robert = {0, 0, 0};
+    Robot robert = {0, 1, 0};
     robertPtr = &robert;
 
-    Block *Blocks = initBlocks(0, home, marker);
+    Block *Blocks = initBlocks(numberOfWalls, home, marker, wallLocations);
     blocksPtr = Blocks;
 
     // Drawing Methods
