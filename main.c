@@ -11,11 +11,17 @@ typedef struct robot
     int direction;
 } Robot;
 
-// Globally required variables, set in main
-int rectSize, buffer, waitTime;
+typedef struct block
+{
+    int x;
+    int y;
+} Block; 
 
-Robot robert = {0, 0, 0};
-Robot *robertPtr = &robert;
+// Globally required variables, set in main
+int rectSize, buffer, waitTime, wallArraySize;
+Robot *robertPtr;
+Block *blocksPtr;
+
 
 double radian(double degrees){
     return (degrees * (M_PI / 180));
@@ -32,6 +38,7 @@ void drawBackground(int gridSize){
 
 void drawRobot(int offset){
     foreground();
+    clear();
     int centreX, centreY, xCoords[3], yCoords[3];
     double directionRad;
 
@@ -79,13 +86,22 @@ void drawRobot(int offset){
     setColour(green);
     fillPolygon(3, xCoords, yCoords);
 
+    sleep(waitTime);
+
+}
+
+Block* initBlocks(int size, Block home, Block marker){
+    Block *Blocks;
+    Blocks = (Block*)calloc(size+2, sizeof(Block));
+    Blocks[0] = home;
+    Blocks[1] = marker; 
+
+    return Blocks;
 }
 
 void forward(){
     for(int i = 1; i < 11; i++){
-        clear();
         drawRobot(i);
-        sleep(waitTime);
     }
     if(robertPtr->direction == 0){
         robertPtr->y -= 1;
@@ -101,18 +117,30 @@ void forward(){
 void left(){
     for(int i = 0; i < 18; i++){
         robertPtr->direction -= 5;
-        clear();
         drawRobot(0);
-        sleep(waitTime);
     }
 }
 
 void right(){
     for(int i = 0; i < 18; i++){
         robertPtr->direction += 5;
-        clear();
         drawRobot(0);
-        sleep(waitTime);
+    }
+}
+
+int atMarker(){
+    if(blocksPtr[1].x == robertPtr->x && blocksPtr[1].y == robertPtr->y){
+        return 1;
+    }else{
+        return 0;
+    }
+}
+
+int atHome(){
+    if(blocksPtr[0].x == robertPtr->x && blocksPtr[0].y == robertPtr->y){
+        return 1;
+    }else{
+        return 0;
     }
 }
 
@@ -120,31 +148,39 @@ int main(void){
     int screenResolutionY, drawableSize, gridSize; 
     int randomPlacement = 0; //Allows for random placement of objects 
 
-    waitTime = 25; 
+    waitTime = 20; 
+    wallArraySize = 1;
     
     // Input Parameters
     screenResolutionY = 982; 
     gridSize = 8; 
+    Block home = {0, 0};
+    Block marker = {1, 0};
 
     // Calculated Parameters
     drawableSize = screenResolutionY - 210; // 210 pixels of the screen is drawApp unusable space
     rectSize = drawableSize / (gridSize+1);
     buffer = ((drawableSize % rectSize) + rectSize) / 2; 
 
+    // Environment Set-Up
+    Robot robert = {0, 0, 0};
+    robertPtr = &robert;
+
+    Block *Blocks = initBlocks(0, home, marker);
+    blocksPtr = Blocks;
+
     // Drawing Methods
     setWindowSize(drawableSize, drawableSize); 
     drawBackground(gridSize);
-
     drawRobot(0);
     
-    right();
-    forward();
-    forward();
-    forward();
-    right();
-    forward();
-    left();
-
+    // right();
+    // forward();
+    // forward();
+    // forward();
+    // right();
+    // forward();
+    // left();
 
     return 0; 
 }
