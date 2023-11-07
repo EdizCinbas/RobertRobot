@@ -18,8 +18,8 @@ typedef struct block
     int y;
 } Block; 
 
-// Globally required variables, set in main
-int rectSize, buffer, waitTime, numberOfWalls;
+// Globally required variables
+int rectSize, buffer, gridSize, waitTime, numberOfWalls;
 Robot *robertPtr;
 Block *blocksPtr;
 
@@ -28,7 +28,7 @@ double radian(double degrees){
     return (degrees * (M_PI / 180));
 }
 
-void drawBackground(int gridSize){
+void drawBackground(){
     background();
     for(int i = 0; i < gridSize; i++){
         for(int j = 0; j < gridSize; j++){
@@ -145,14 +145,6 @@ void right(){
     }
 }
 
-int atMarker(){
-    if(blocksPtr[1].x == robertPtr->x && blocksPtr[1].y == robertPtr->y){
-        return 1;
-    }else{
-        return 0;
-    }
-}
-
 int atHome(){
     if(blocksPtr[0].x == robertPtr->x && blocksPtr[0].y == robertPtr->y){
         return 1;
@@ -161,8 +153,19 @@ int atHome(){
     }
 }
 
+int atMarker(){
+    if(blocksPtr[1].x == robertPtr->x && blocksPtr[1].y == robertPtr->y){
+        return 1;
+    }else{
+        return 0;
+    }
+}
+
 int canMoveForward(){
     Robot nextPos = nextPosition();
+    if(nextPos.x < 0 || nextPos.x >= gridSize || nextPos.y < 0 || nextPos.y >= gridSize){
+        return 0;
+    }
     for(int i = 2; i < numberOfWalls + 2; i++){
         if(blocksPtr[i].x == nextPos.x && blocksPtr[i].y == nextPos.y){
             return 0;
@@ -172,7 +175,7 @@ int canMoveForward(){
 }
 
 int main(void){
-    int screenResolutionY, drawableSize, gridSize; 
+    int screenResolutionY, drawableSize; 
     int randomPlacement = 0; //Allows for random placement of objects 
 
     waitTime = 20; 
@@ -199,7 +202,7 @@ int main(void){
 
     // Drawing Methods
     setWindowSize(drawableSize, drawableSize); 
-    drawBackground(gridSize);
+    drawBackground();
     drawRobot(0);
     
     // right();
