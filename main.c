@@ -48,6 +48,32 @@ void drawBackground(){
     }
 } 
 
+void drawMarker(int offset){
+    setColour(lightgray);
+    // If being carried, circle, if not, square
+    if(robertPtr->isCarryingMarker){
+
+        int direction = robertPtr->direction; 
+        int x = buffer + rectSize*blocksPtr[1].x + rectSize/20;
+        int y = buffer + rectSize*blocksPtr[1].y + rectSize/20;
+
+        // Offsetting the marker to move with the robot
+        if(direction == 0){
+            y = y - offset;
+        }else if(direction == 90){
+            x = x + offset;
+        }else if(direction == 180){
+            y = y + offset;
+        }else if(direction == 270){
+            x = x - offset;
+        }
+        
+        fillOval(x, y, 18*rectSize/20, 18*rectSize/20);
+    }else{
+        fillRect(buffer+rectSize*blocksPtr[1].x+1, buffer+rectSize*blocksPtr[1].y+1, rectSize-1, rectSize-1);
+    }
+}
+
 void drawRobot(int offset){
     foreground();
     clear();
@@ -97,17 +123,11 @@ void drawRobot(int offset){
 
     setColour(green);
     fillPolygon(3, xCoords, yCoords);
+    drawMarker(offset);
 
     sleep(waitTime);
 }
 
-void drawMarker(){
-    if(robertPtr->isCarryingMarker){
-
-    }else{
-
-    }
-}
 
 Block* initBlocks(char wallLocations[]){
     Block *Blocks;
@@ -144,7 +164,10 @@ void forward(){
         drawRobot(i);
     }
     *robertPtr = nextPosition();
-
+    if(robertPtr->isCarryingMarker){
+        blocksPtr[1].x = robertPtr->x;
+        blocksPtr[1].y = robertPtr->y;
+    }
 }
 
 void left(){
@@ -162,11 +185,15 @@ void right(){
 }
 
 void pickUpMarker(){
-    robertPtr->isCarryingMarker = 1;
+    if(atMarker()){
+        robertPtr->isCarryingMarker = 1;
+        drawRobot(0);
+    }
 }
 
 void dropMarker(){
     robertPtr->isCarryingMarker = 0;
+    drawRobot(0);
 }
 
 
@@ -233,13 +260,14 @@ int main(void){
     drawBackground();
     drawRobot(0);
     
-    right();
-    forward();
-    forward();
-    forward();
-    right();
-    forward();
-    left();
+
+    // right();
+    // forward();
+    // forward();
+    // forward();
+    // right();
+    // forward();
+    // left();
 
     return 0; 
 }
