@@ -10,6 +10,7 @@ typedef struct robot
     int x;
     int y;
     int direction;
+    int isCarryingMarker;
 } Robot;
 
 typedef struct block
@@ -18,8 +19,8 @@ typedef struct block
     int y;
 } Block; 
 
-// Globally required variables
-int rectSize, buffer, gridSize, waitTime, numberOfWalls;
+// Globally used variables, required numerous times
+int rectSize, buffer, gridSize, waitTime, numberOfWalls; 
 Robot *robertPtr;
 Block *blocksPtr;
 
@@ -30,11 +31,21 @@ double radian(double degrees){
 
 void drawBackground(){
     background();
+    // Nested for loop draws SIZExSIZE grid of rectangles  
     for(int i = 0; i < gridSize; i++){
         for(int j = 0; j < gridSize; j++){
             drawRect((buffer + j*rectSize), (buffer + i*rectSize), rectSize, rectSize);
         }
-    } //Nested for loop draws SIZExSIZE grid of rectangles   
+    } 
+    // Draw Home Square
+    setColour(blue);
+    fillRect(buffer+rectSize*blocksPtr[0].x+1, buffer+rectSize*blocksPtr[0].y+1, rectSize-1, rectSize-1);
+
+    // Draw Walls
+    setColour(black);
+    for(int i = 2; i < numberOfWalls + 2; i++){
+        fillRect(buffer+rectSize*blocksPtr[i].x+1, buffer+rectSize*blocksPtr[i].y+1, rectSize-1, rectSize-1);
+    }
 } 
 
 void drawRobot(int offset){
@@ -88,18 +99,23 @@ void drawRobot(int offset){
     fillPolygon(3, xCoords, yCoords);
 
     sleep(waitTime);
-
 }
 
-Block* initBlocks(int numberOfWalls, Block home, Block marker, char wallLocations[]){
+void drawMarker(){
+    if(robertPtr->isCarryingMarker){
+
+    }else{
+
+    }
+}
+
+Block* initBlocks(char wallLocations[]){
     Block *Blocks;
     Blocks = (Block*)calloc(numberOfWalls+2, sizeof(Block));
-    Blocks[0] = home;
-    Blocks[1] = marker; 
 
     // Populating the walls by separating coordinates from Str
     char *token = strtok(wallLocations, "."); 
-    for(int i = 2; i < numberOfWalls + 2; i ++){
+    for(int i = 0; i < numberOfWalls + 2; i ++){
         Block temp = {0, 0};
         temp.x = atoi(token = strtok(NULL, "."));
         temp.y= atoi(token = strtok(NULL, "."));
@@ -110,7 +126,7 @@ Block* initBlocks(int numberOfWalls, Block home, Block marker, char wallLocation
 }
 
 Robot nextPosition(){
-    Robot temp = {robertPtr->x, robertPtr->y, robertPtr->direction};
+    Robot temp = {robertPtr->x, robertPtr->y, robertPtr->direction, robertPtr->isCarryingMarker};
     if(robertPtr->direction == 0){
         temp.y -= 1;
     }else if(robertPtr->direction == 90){
@@ -128,7 +144,7 @@ void forward(){
         drawRobot(i);
     }
     *robertPtr = nextPosition();
-    
+
 }
 
 void left(){
@@ -144,6 +160,15 @@ void right(){
         drawRobot(0);
     }
 }
+
+void pickUpMarker(){
+    robertPtr->isCarryingMarker = 1;
+}
+
+void dropMarker(){
+    robertPtr->isCarryingMarker = 0;
+}
+
 
 int atHome(){
     if(blocksPtr[0].x == robertPtr->x && blocksPtr[0].y == robertPtr->y){
@@ -174,6 +199,10 @@ int canMoveForward(){
     return 1;
 }
 
+int isCarryingAMarker(){
+    return robertPtr->isCarryingMarker;
+}
+
 int main(void){
     int screenResolutionY, drawableSize; 
     int randomPlacement = 0; //Allows for random placement of objects 
@@ -184,9 +213,8 @@ int main(void){
     // Input Parameters
     screenResolutionY = 982; 
     gridSize = 8; 
-    Block home = {0, 0};
-    Block marker = {1, 0};
-    char wallLocations[] = "-.0.0";
+
+    char wallLocations[] = "-.0.1.1.0.0.2";
 
     // Calculated Parameters
     drawableSize = screenResolutionY - 210; // 210 pixels of the screen is drawApp unusable space
@@ -194,24 +222,24 @@ int main(void){
     buffer = ((drawableSize % rectSize) + rectSize) / 2; 
 
     // Environment Set-Up
-    Robot robert = {0, 1, 0};
-    robertPtr = &robert;
-
-    Block *Blocks = initBlocks(numberOfWalls, home, marker, wallLocations);
+    Block *Blocks = initBlocks(wallLocations);
     blocksPtr = Blocks;
+
+    Robot robert = {Blocks[0].x, Blocks[0].y, 0, 0};
+    robertPtr = &robert;
 
     // Drawing Methods
     setWindowSize(drawableSize, drawableSize); 
     drawBackground();
     drawRobot(0);
     
-    // right();
-    // forward();
-    // forward();
-    // forward();
-    // right();
-    // forward();
-    // left();
+    right();
+    forward();
+    forward();
+    forward();
+    right();
+    forward();
+    left();
 
     return 0; 
 }
