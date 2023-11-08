@@ -5,6 +5,48 @@
 #include "graphics.h"
 
 
+// Stack data structure for robert's memory (ChatGPT, 2023)
+typedef struct StackNode {
+    int data;
+    struct StackNode* next;
+} StackNode;
+typedef struct Stack {
+    StackNode* top;
+} Stack;
+Stack* createStack() {
+    Stack* stack = (Stack*)malloc(sizeof(Stack));
+    if (!stack) {
+        fprintf(stderr, "Memory allocation failed.\n");
+        exit(1);
+    }
+    stack->top = NULL;
+    return stack;
+}
+void push(Stack* stack, int movement) {
+    StackNode* newNode = (StackNode*)malloc(sizeof(StackNode));
+    if (!newNode) {
+        fprintf(stderr, "Memory allocation failed.\n");
+        exit(1);
+    }
+    newNode->data = movement;
+    newNode->next = stack->top;
+    stack->top = newNode;
+}
+int pop(Stack* stack) {
+    if (stack->top == NULL) {
+        return 0;
+    }
+    StackNode* poppedNode = stack->top;
+    int movement = poppedNode->data;
+    stack->top = poppedNode->next;
+    free(poppedNode);
+    return movement;
+}
+
+
+
+// Robot Code
+
 typedef struct robot
 {
     int x;
@@ -23,6 +65,7 @@ typedef struct block
 int rectSize, buffer, gridSize, waitTime, numberOfWalls; 
 Robot *robertPtr;
 Block *blocksPtr;
+Stack* movementStack;
 
 
 double radian(double degrees){
@@ -121,9 +164,9 @@ void drawRobot(int offset){
         }
     }
 
+    drawMarker(offset);
     setColour(green);
     fillPolygon(3, xCoords, yCoords);
-    drawMarker(offset);
 
     sleep(waitTime);
 }
@@ -131,7 +174,7 @@ void drawRobot(int offset){
 
 Block* initBlocks(char wallLocations[]){
     Block *Blocks;
-    Blocks = (Block*)calloc(numberOfWalls+2, sizeof(Block));
+    Blocks = (Block*)malloc(sizeof(Block)*(numberOfWalls+2));
 
     // Populating the walls by separating coordinates from Str
     char *token = strtok(wallLocations, "."); 
@@ -184,18 +227,6 @@ void right(){
     }
 }
 
-void pickUpMarker(){
-    if(atMarker()){
-        robertPtr->isCarryingMarker = 1;
-        drawRobot(0);
-    }
-}
-
-void dropMarker(){
-    robertPtr->isCarryingMarker = 0;
-    drawRobot(0);
-}
-
 
 int atHome(){
     if(blocksPtr[0].x == robertPtr->x && blocksPtr[0].y == robertPtr->y){
@@ -213,6 +244,18 @@ int atMarker(){
     }
 }
 
+void pickUpMarker(){
+    if(atMarker()){
+        robertPtr->isCarryingMarker = 1;
+        drawRobot(0);
+    }
+}
+
+void dropMarker(){
+    robertPtr->isCarryingMarker = 0;
+    drawRobot(0);
+}
+
 int canMoveForward(){
     Robot nextPos = nextPosition();
     if(nextPos.x < 0 || nextPos.x >= gridSize || nextPos.y < 0 || nextPos.y >= gridSize){
@@ -228,6 +271,10 @@ int canMoveForward(){
 
 int isCarryingAMarker(){
     return robertPtr->isCarryingMarker;
+}
+
+void solve(){
+
 }
 
 int main(void){
@@ -255,19 +302,30 @@ int main(void){
     Robot robert = {Blocks[0].x, Blocks[0].y, 0, 0};
     robertPtr = &robert;
 
+    movementStack = createStack();
+
     // Drawing Methods
     setWindowSize(drawableSize, drawableSize); 
     drawBackground();
     drawRobot(0);
     
+    right();
+    forward();
+    left();
+    forward();
+    pickUpMarker();
+    right();
+    forward();
+    forward();
+    forward();
+    forward();
+    forward();
+    forward();
+    dropMarker();
 
-    // right();
-    // forward();
-    // forward();
-    // forward();
-    // right();
-    // forward();
-    // left();
 
+    solve();
+
+    free(movementStack);
     return 0; 
 }
