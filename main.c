@@ -52,7 +52,7 @@ typedef struct robot
     int x;
     int y;
     int direction;
-    int isCarryingMarker;
+    int markerID;
 } Robot;
 
 typedef struct block
@@ -62,9 +62,10 @@ typedef struct block
 } Block; 
 
 // Globally used variables, required numerous times
-int rectSize, buffer, gridSize, waitTime, numberOfWalls; 
+int rectSize, buffer, gridSize, waitTime, numberOfWalls, numberOfMarkers, markersRetrieved; 
 Robot *robertPtr;
 Block *blocksPtr;
+Block *markerPtr;
 Stack* movementStack;
 
 
@@ -86,7 +87,7 @@ void drawBackground(){
 
     // Draw Walls
     setColour(black);
-    for(int i = 2; i < numberOfWalls + 2; i++){
+    for(int i = 1; i < numberOfWalls + 1; i++){
         fillRect(buffer+rectSize*blocksPtr[i].x+1, buffer+rectSize*blocksPtr[i].y+1, rectSize-1, rectSize-1);
     }
 } 
@@ -94,26 +95,30 @@ void drawBackground(){
 void drawMarker(int offset){
     setColour(lightgray);
     // If being carried, circle, if not, square
-    if(robertPtr->isCarryingMarker){
+    int marker = robertPtr->markerID;
+    for(int i = 0; i < numberOfMarkers; i++){
+        if(!(markerPtr[i].x == blocksPtr[0].x && markerPtr[i].y == blocksPtr[0].y)){
+            if(marker-1 == i){
+                int direction = robertPtr->direction; 
+                int x = buffer + rectSize*markerPtr[i].x + rectSize/20;
+                int y = buffer + rectSize*markerPtr[i].y + rectSize/20;
 
-        int direction = robertPtr->direction; 
-        int x = buffer + rectSize*blocksPtr[1].x + rectSize/20;
-        int y = buffer + rectSize*blocksPtr[1].y + rectSize/20;
-
-        // Offsetting the marker to move with the robot
-        if(direction == 0){
-            y = y - offset;
-        }else if(direction == 90){
-            x = x + offset;
-        }else if(direction == 180){
-            y = y + offset;
-        }else if(direction == 270){
-            x = x - offset;
+                // Offsetting the marker to move with the robot
+                if(direction == 0){
+                    y = y - offset;
+                }else if(direction == 90){
+                    x = x + offset;
+                }else if(direction == 180){
+                    y = y + offset;
+                }else if(direction == 270){
+                    x = x - offset;
+                }
+                
+                fillOval(x, y, 18*rectSize/20, 18*rectSize/20);
+            }else{
+                fillRect(buffer+rectSize*markerPtr[i].x+1, buffer+rectSize*markerPtr[i].y+1, rectSize-1, rectSize-1);
+            }
         }
-        
-        fillOval(x, y, 18*rectSize/20, 18*rectSize/20);
-    }else{
-        fillRect(buffer+rectSize*blocksPtr[1].x+1, buffer+rectSize*blocksPtr[1].y+1, rectSize-1, rectSize-1);
     }
 }
 
@@ -125,7 +130,7 @@ void drawRobot(int offset){
 
     // Grabbing robert's values
     int direction = robertPtr->direction;
-    robertPtr->direction = direction % 360;
+    robertPtr->direction = (direction + 360) % 360;
     int x = robertPtr->x;
     int y = robertPtr->y; 
 
@@ -174,11 +179,11 @@ void drawRobot(int offset){
 
 Block* initBlocks(char wallLocations[]){
     Block *Blocks;
-    Blocks = (Block*)malloc(sizeof(Block)*(numberOfWalls+2));
+    Blocks = (Block*)malloc(sizeof(Block)*(numberOfWalls+1));
 
     // Populating the walls by separating coordinates from Str
     char *token = strtok(wallLocations, "."); 
-    for(int i = 0; i < numberOfWalls + 2; i ++){
+    for(int i = 0; i < numberOfWalls + 1; i ++){
         Block temp = {0, 0};
         temp.x = atoi(token = strtok(NULL, "."));
         temp.y= atoi(token = strtok(NULL, "."));
@@ -188,8 +193,23 @@ Block* initBlocks(char wallLocations[]){
     return Blocks;
 }
 
+Block* initMarkers(char markerLocations[]){
+    Block *Markers;
+    Markers = (Block*)malloc(sizeof(Block)*(numberOfMarkers));
+    // Populating the walls by separating coordinates from Str
+    char *token = strtok(markerLocations, "."); 
+    for(int i = 0; i < numberOfMarkers; i ++){
+        Block temp = {0, 0};
+        temp.x = atoi(token = strtok(NULL, "."));
+        temp.y= atoi(token = strtok(NULL, "."));
+        Markers[i] = temp; 
+    }
+
+    return Markers;
+}
+
 Robot nextPosition(){
-    Robot temp = {robertPtr->x, robertPtr->y, robertPtr->direction, robertPtr->isCarryingMarker};
+    Robot temp = {robertPtr->x, robertPtr->y, robertPtr->direction, robertPtr->markerID};
     if(robertPtr->direction == 0){
         temp.y -= 1;
     }else if(robertPtr->direction == 90){
@@ -207,9 +227,9 @@ void forward(){
         drawRobot(i);
     }
     *robertPtr = nextPosition();
-    if(robertPtr->isCarryingMarker){
-        blocksPtr[1].x = robertPtr->x;
-        blocksPtr[1].y = robertPtr->y;
+    if(robertPtr->markerID){
+        markerPtr[robertPtr->markerID-1].x = robertPtr->x;
+        markerPtr[robertPtr->markerID-1].y = robertPtr->y;
     }
 }
 
@@ -237,31 +257,35 @@ int atHome(){
 }
 
 int atMarker(){
-    if(blocksPtr[1].x == robertPtr->x && blocksPtr[1].y == robertPtr->y){
-        return 1;
-    }else{
-        return 0;
+    for(int i = 0; i < numberOfMarkers; i++){
+        if((markerPtr[i].x == robertPtr->x && markerPtr[i].y == robertPtr->y) && !(markerPtr[i].x == blocksPtr[0].x && markerPtr[i].y == blocksPtr[0].y)){
+            return i+1;
+        }
     }
+    return 0;
 }
 
 void pickUpMarker(){
-    if(atMarker()){
-        robertPtr->isCarryingMarker = 1;
+    int marker = atMarker();
+    if(marker){
+        robertPtr->markerID = marker;
         drawRobot(0);
     }
 }
 
 void dropMarker(){
-    robertPtr->isCarryingMarker = 0;
+    robertPtr->markerID = 0;
     drawRobot(0);
 }
 
 int canMoveForward(){
     Robot nextPos = nextPosition();
+    // Check it is within the grid
     if(nextPos.x < 0 || nextPos.x >= gridSize || nextPos.y < 0 || nextPos.y >= gridSize){
         return 0;
     }
-    for(int i = 2; i < numberOfWalls + 2; i++){
+    // Check if there is a wall
+    for(int i = 1; i < numberOfWalls + 1; i++){
         if(blocksPtr[i].x == nextPos.x && blocksPtr[i].y == nextPos.y){
             return 0;
         }
@@ -270,7 +294,7 @@ int canMoveForward(){
 }
 
 int isCarryingAMarker(){
-    return robertPtr->isCarryingMarker;
+    return robertPtr->markerID;
 }
 
 void goHome(){
@@ -294,6 +318,9 @@ void goHome(){
         }
     }
     dropMarker();
+    markersRetrieved += 1;
+    right();
+    right();
 }
 
 void solve(){
@@ -310,6 +337,7 @@ void solve(){
         right();
         push(movementStack, 3);
         solve();
+        return;
     }
     return;
 } 
@@ -321,12 +349,15 @@ int main(void){
 
     waitTime = 20; 
     numberOfWalls = 1;
+    numberOfMarkers = 2;
+    markersRetrieved = 0;
     
     // Input Parameters
     screenResolutionY = 982; 
-    gridSize = 8; 
+    gridSize = 12; 
 
-    char wallLocations[] = "-.0.1.1.0.0.2";
+    char wallLocations[] = "-.1.0.1.2";
+    char markerLocations[] = "-.0.1.5.0";
 
     // Calculated Parameters
     drawableSize = screenResolutionY - 210; // 210 pixels of the screen is drawApp unusable space
@@ -337,6 +368,9 @@ int main(void){
     Block *Blocks = initBlocks(wallLocations);
     blocksPtr = Blocks;
 
+    Block *Markers = initMarkers(markerLocations);
+    markerPtr = Markers;
+
     Robot robert = {Blocks[0].x, Blocks[0].y, 0, 0};
     robertPtr = &robert;
 
@@ -346,23 +380,13 @@ int main(void){
     setWindowSize(drawableSize, drawableSize); 
     drawBackground();
     drawRobot(0);
-    
-    // right();
-    // forward();
-    // left();
-    // forward();
-    // pickUpMarker();
-    // right();
-    // forward();
-    // forward();
-    // forward();
-    // forward();
-    // forward();
-    // forward();
-    // dropMarker();
 
-    solve();
+    while(markersRetrieved != numberOfMarkers){
+        solve();
+    } 
 
     free(movementStack);
+    free(blocksPtr);
+    free(markerPtr);
     return 0; 
 }
