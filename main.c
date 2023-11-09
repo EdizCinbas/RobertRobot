@@ -273,9 +273,47 @@ int isCarryingAMarker(){
     return robertPtr->isCarryingMarker;
 }
 
-void solve(){
-
+void goHome(){
+    // Turn around and pop the previous movements to go back
+    right();
+    right();
+    while(movementStack->top != NULL){
+        int movement = pop(movementStack);
+        switch (movement){
+            case 1:
+                forward();
+                break;
+            case 2:
+                right();
+                break;
+            case 3:
+                left();
+                break;
+            default:
+                break;
+        }
+    }
+    dropMarker();
 }
+
+void solve(){
+    if(atMarker()){
+        pickUpMarker();
+        goHome();
+        return;
+    }else if (canMoveForward()){
+        forward();
+        push(movementStack, 1);
+        solve();
+        return;
+    }else{
+        right();
+        push(movementStack, 3);
+        solve();
+    }
+    return;
+} 
+
 
 int main(void){
     int screenResolutionY, drawableSize; 
@@ -309,20 +347,19 @@ int main(void){
     drawBackground();
     drawRobot(0);
     
-    right();
-    forward();
-    left();
-    forward();
-    pickUpMarker();
-    right();
-    forward();
-    forward();
-    forward();
-    forward();
-    forward();
-    forward();
-    dropMarker();
-
+    // right();
+    // forward();
+    // left();
+    // forward();
+    // pickUpMarker();
+    // right();
+    // forward();
+    // forward();
+    // forward();
+    // forward();
+    // forward();
+    // forward();
+    // dropMarker();
 
     solve();
 
