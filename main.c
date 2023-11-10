@@ -222,6 +222,8 @@ Robot nextPosition(){
     return temp;
 }
 
+
+// The required robot functions 
 void forward(){
     for(int i = 1; i < 11; i++){
         drawRobot(i);
@@ -296,6 +298,9 @@ int canMoveForward(){
 int isCarryingAMarker(){
     return robertPtr->markerID;
 }
+//-------------------------
+
+
 
 void goHome(){
     // Turn around and pop the previous movements to go back
@@ -344,25 +349,29 @@ void solve(){
 
 
 int main(void){
-    int screenResolutionY, drawableSize; 
-    int randomPlacement = 0; //Allows for random placement of objects 
+    int screenResolutionY, drawableSize;
+    long tempLength; 
 
     waitTime = 20; 
-    numberOfWalls = 1;
-    numberOfMarkers = 2;
     markersRetrieved = 0;
     
     // Input Parameters
     screenResolutionY = 982; 
-    gridSize = 12; 
-
+    gridSize = 8; 
     char wallLocations[] = "-.1.0.1.2";
     char markerLocations[] = "-.0.1.5.0";
+
 
     // Calculated Parameters
     drawableSize = screenResolutionY - 210; // 210 pixels of the screen is drawApp unusable space
     rectSize = drawableSize / (gridSize+1);
     buffer = ((drawableSize % rectSize) + rectSize) / 2; 
+
+    tempLength = strlen(wallLocations);
+    numberOfWalls = ((tempLength - 1) / 4) - 1;
+
+    tempLength = strlen(markerLocations);
+    numberOfMarkers = (tempLength - 1) / 4;
 
     // Environment Set-Up
     Block *Blocks = initBlocks(wallLocations);
