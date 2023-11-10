@@ -4,8 +4,23 @@
 #include <string.h>
 #include "graphics.h"
 
+// Robot Required Structs
+typedef struct robot
+{
+    int x;
+    int y;
+    int direction;
+    int markerID;
+} Robot;
 
-// Stack data structure for robert's memory (ChatGPT, 2023)
+typedef struct block
+{
+    int x;
+    int y;
+} Block; 
+
+
+// Stack data structure for robert's movement memory (ChatGPT, 2023)
 typedef struct StackNode {
     int data;
     struct StackNode* next;
@@ -43,23 +58,53 @@ int pop(Stack* stack) {
     return movement;
 }
 
+// Linked list data structure for robert's positional memory (ChatGPT, 2023)
+struct Node {
+    Block data;
+    struct Node* next;
+};
+void append(struct Node** head, Block data) {
+    struct Node* newNode = (struct Node*)malloc(sizeof(struct Node));
+    newNode->data = data;
+    newNode->next = NULL;
+
+    if (*head == NULL) {
+        *head = newNode;
+    } else {
+        struct Node* temp = *head;
+        while (temp->next != NULL) {
+            temp = temp->next;
+        }
+        temp->next = newNode;
+    }
+}
+int isInside(struct Node* head, int x, int y) {
+    struct Node* temp = head;
+    while (temp != NULL) {
+        if(temp->data.x == x && temp->data.y == y){
+            return 1;
+        }
+        temp = temp->next;
+    }
+    return 0;
+}
+void resetList(struct Node** head) {
+    // Free the memory of all nodes
+    struct Node* current = *head;
+    struct Node* next;
+    
+    while (current != NULL) {
+        next = current->next;
+        free(current);
+        current = next;
+    }
+
+    // Set the head to NULL
+    *head = NULL;
+}
 
 
 // Robot Code
-
-typedef struct robot
-{
-    int x;
-    int y;
-    int direction;
-    int markerID;
-} Robot;
-
-typedef struct block
-{
-    int x;
-    int y;
-} Block; 
 
 /* 
 Globally used variables declared here:
@@ -309,8 +354,10 @@ int isCarryingAMarker(){
 //-------------------------
 
 
+// Solution methods
 
 void goHome(){
+    // Retraces the moves back to the home square
     // Turn around and pop the previous movements to go back
     right();
     right();
@@ -336,33 +383,8 @@ void goHome(){
     right();
 }
 
-void goBack(int step){
-    // Turn around and pop the previous movements to go back
-    right();
-    right();
-    while(movementStack->top != NULL && step){
-        int movement = pop(movementStack);
-        switch (movement){
-            case 1:
-                forward();
-                step -= 1; 
-                break;
-            case 2:
-                right();
-                break;
-            case 3:
-                left();
-                break;
-            default:
-                break;
-        }
-    }
-    right();
-    right();
-}
-
+// This was the first solution for up to stage 3, without using dynamic memory
 void simpleSolve(){
-    // This solution is Stage 3.
     if(atMarker()){
         pickUpMarker();
         goHome();
@@ -381,31 +403,95 @@ void simpleSolve(){
     return;
 } 
 
+void goBack(int step){
+    // Goes back 1 square
+    while(movementStack->top != NULL && step){
+        int movement = pop(movementStack);
+        if(movement == 1){
+            step -= 1;
+        }
+    }
+    forward();
+    left();
+    left();
+}
+
+
+/*
+The complexSolve robot keeps track of its own relative positioning and the coordinates it has visited.
+This position is relative to the home and always starts at (0, 0). This information is deliberately separate from
+the robert values in the drawing program because a real life robot would not have access to these.
+
+True to real life, the robot fills in the infomation only from what it can see infront of it.
+*/
+
+Robot guessRobert = {0, 0, 0, 0};
+struct Node* visitedList = NULL;
+
+void guessRobertMove(){
+    // Moves the robot's own relative position according to its relative direction.
+    guessRobert.direction = (guessRobert.direction + 360) % 360;
+    if(guessRobert.direction == 0){
+        guessRobert.y += 1;
+    }else if(guessRobert.direction == 90){
+        guessRobert.x += 1;
+    }else if(guessRobert.direction == 180){
+        guessRobert.y -= 1;
+    }else if(guessRobert.direction == 270){
+        guessRobert.x -= 1;
+    }
+}
+
+Robot guessRobertNext(){
+    // Calculates the robot's relative next position.
+    guessRobert.direction = (guessRobert.direction + 360) % 360;
+    Robot temp = {guessRobert.x, guessRobert.y, guessRobert.direction, 0};
+    if(guessRobert.direction == 0){
+        temp.y += 1;
+    }else if(guessRobert.direction == 90){
+        temp.x += 1;
+    }else if(guessRobert.direction == 180){
+        temp.y -= 1;
+    }else if(guessRobert.direction == 270){
+        temp.x -= 1;
+    }
+    return temp;
+}
+
 void complexSolve(int step){
+
     if(atMarker()){
         pickUpMarker();
         return;
     }else{
-        if(step == 3){
-            return;
-        }
         if(step == 0){
             left();
+            guessRobert.direction -= 90;
             push(movementStack, 2); 
         }
-        if(canMoveForward() && !(nextPosition().x == blocksPtr[0].x && nextPosition().y == blocksPtr[0].y)){
-            forward();
-            push(movementStack, 1);
-            complexSolve(0);
-        }else{
-            right();
-            push(movementStack, 3);
-            complexSolve(step + 1);
+        while(step < 3 && !isCarryingAMarker()){
+            if(canMoveForward() && !(nextPosition().x == blocksPtr[0].x && nextPosition().y == blocksPtr[0].y) && !isInside(visitedList, guessRobertNext().x, guessRobertNext().y)){
+                forward();
+                push(movementStack, 1);
+
+                guessRobertMove();
+                Block temp = {guessRobert.x, guessRobert.y};
+                append(&visitedList, temp);
+
+                complexSolve(0);
+            }else{
+                right();
+                guessRobert.direction += 90;
+                push(movementStack, 3);
+                step += 1;
+            }
         }
         if(!isCarryingAMarker()){
+            guessRobertMove();
+            guessRobert.direction -= 180;
             goBack(1);
             return;
-        }
+        }    
     }
 }
 
@@ -414,14 +500,14 @@ int main(void){
     int screenResolutionY, drawableSize;
     long tempLength; // Used for grabbing string lenght
 
-    waitTime = 20; 
+    waitTime = 5; 
     markersRetrieved = 0;
     
     // Input Parameters
     screenResolutionY = 982; 
     gridSize = 8; 
-    char wallLocations[] = "-.1.0.1.2.2.1";
-    char markerLocations[] = "-.0.1.5.0";
+    char wallLocations[] = "-.1.0.1.1.1.3.3.0.3.1.3.2.3.3";
+    char markerLocations[] = "-.5.5.0.6";
 
 
     // Calculated Parameters
@@ -445,19 +531,25 @@ int main(void){
     Robot robert = {Blocks[0].x, Blocks[0].y, 0, 0};
     robertPtr = &robert;
 
-    movementStack = createStack();
-
     // Drawing Methods
     setWindowSize(drawableSize, drawableSize); 
     drawBackground();
     drawRobot(0);
 
+
+    // Algorithm
+    movementStack = createStack();
     while(markersRetrieved != numberOfMarkers){
         complexSolve(0);
         goHome();
+        guessRobert.x = 0;
+        guessRobert.y = 0;
+        guessRobert.direction = 0;
+        resetList(&visitedList);
     } 
 
     free(movementStack);
+    free(visitedList);
     free(blocksPtr);
     free(markerPtr);
     return 0; 
