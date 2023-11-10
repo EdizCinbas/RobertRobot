@@ -202,7 +202,10 @@ Block* initMarkers(char markerLocations[]){
     Block *Markers;
     Markers = (Block*)malloc(sizeof(Block)*(numberOfMarkers));
     // Populating the walls by separating coordinates from Str
-    char *token = strtok(markerLocations, "."); 
+
+    /* Note: This array indexes at 0, but the markerID 0 is used as 'No Markers'.
+    Thus when acessing this array 'MarkerID - 1' is used, and when returning, 'index + 1' */
+    char *token = strtok(markerLocations, ".");
     for(int i = 0; i < numberOfMarkers; i ++){
         Block temp = {0, 0};
         temp.x = atoi(token = strtok(NULL, "."));
@@ -333,7 +336,33 @@ void goHome(){
     right();
 }
 
-void solve(){
+void goBack(int step){
+    // Turn around and pop the previous movements to go back
+    right();
+    right();
+    while(movementStack->top != NULL && step){
+        int movement = pop(movementStack);
+        switch (movement){
+            case 1:
+                forward();
+                step -= 1; 
+                break;
+            case 2:
+                right();
+                break;
+            case 3:
+                left();
+                break;
+            default:
+                break;
+        }
+    }
+    right();
+    right();
+}
+
+void simpleSolve(){
+    // This solution is Stage 3.
     if(atMarker()){
         pickUpMarker();
         goHome();
@@ -341,21 +370,49 @@ void solve(){
     }else if (canMoveForward()){
         forward();
         push(movementStack, 1);
-        solve();
+        simpleSolve();
         return;
     }else{
         right();
         push(movementStack, 3);
-        solve();
+        simpleSolve();
         return;
     }
     return;
 } 
 
+void complexSolve(int step){
+    if(atMarker()){
+        pickUpMarker();
+        return;
+    }else{
+        if(step == 3){
+            return;
+        }
+        if(step == 0){
+            left();
+            push(movementStack, 2); 
+        }
+        if(canMoveForward() && !(nextPosition().x == blocksPtr[0].x && nextPosition().y == blocksPtr[0].y)){
+            forward();
+            push(movementStack, 1);
+            complexSolve(0);
+        }else{
+            right();
+            push(movementStack, 3);
+            complexSolve(step + 1);
+        }
+        if(!isCarryingAMarker()){
+            goBack(1);
+            return;
+        }
+    }
+}
+
 
 int main(void){
     int screenResolutionY, drawableSize;
-    long tempLength; 
+    long tempLength; // Used for grabbing string lenght
 
     waitTime = 20; 
     markersRetrieved = 0;
@@ -363,7 +420,7 @@ int main(void){
     // Input Parameters
     screenResolutionY = 982; 
     gridSize = 8; 
-    char wallLocations[] = "-.1.0.1.2";
+    char wallLocations[] = "-.1.0.1.2.2.1";
     char markerLocations[] = "-.0.1.5.0";
 
 
@@ -396,7 +453,8 @@ int main(void){
     drawRobot(0);
 
     while(markersRetrieved != numberOfMarkers){
-        solve();
+        complexSolve(0);
+        goHome();
     } 
 
     free(movementStack);
