@@ -61,7 +61,12 @@ typedef struct block
     int y;
 } Block; 
 
-// Globally used variables, required numerous times
+/* 
+Globally used variables declared here:
+The globalisation of these variables is a deliberate choice. These could just as well be 
+passed into each function. However they are so often used that having these be global makes
+the code neater and also more efficient.
+*/
 int rectSize, buffer, gridSize, waitTime, numberOfWalls, numberOfMarkers, markersRetrieved; 
 Robot *robertPtr;
 Block *blocksPtr;
