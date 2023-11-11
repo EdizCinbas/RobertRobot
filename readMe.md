@@ -53,9 +53,10 @@ The code takes in 6 parameters:
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -markerLocations: the same format as wallLocations, input the marker locations separated by periods. Example might look like "-.5.5.0.6" for two markers at (5,5) and (0,6).
 
 Compile the code using:
-''' 
+```
 gcc -o main main.c graphics.c
-'''
+```
+
 
 And run the code using:
 ```
