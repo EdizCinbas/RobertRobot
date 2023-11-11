@@ -1,4 +1,5 @@
 # Robert Robot
+Completes Stage 6 of the coursework
 
 ## Code Structure
 
@@ -34,7 +35,7 @@ while avoiding blocks I have already visited, or blocks like walls and home.
 
 This algorithm therefore only uses the 1 sensor that the robot has access to (check forward), and information it can store, like which moves it has already made. Using these moves it can store its direction and the positions it visited relative to where it was initially placed. Hence this robot stays true to real life and does not use any information from within the code to solve the puzzle, which was my goal.  
 
-These are the criteria I placed on the program when developing it to keep true to a real life robot and solve this puzzle:
+In addition to completing stage 6 on the coursework, these are the criteria I placed on the program to stay true to a real life robot:
 1. The robot cannot know its exact place on the grid since the initial placement is essentially random  (it can only calculate its relative position to where it started, no using exact 2D array replica of the grid)
 2. The robot cannot differentiate whether it has hit a block, or it has reached the edge of the grid (only whether it can or cannot move forward, that is the sole function of a forwards facing sensor)
 3. The robot animates smoothly (no snapping)
@@ -69,7 +70,5 @@ With the parameters in place an example run code would be:
 ```
 ./main 20 8 982 -.1.0.1.1.1.3.3.0.3.1.3.2.3.3 -.5.5.0.6 | java -jar drawapp.jar
 ```
-
-There is no input validation in this program as it was not in the scope of the project. Please make sure the input parameters are given in the requested format to ensure the code working. 
 
 ## Thank you
