@@ -9,7 +9,7 @@ typedef struct robot
 {
     int x;
     int y;
-    int direction;
+    int direction; // bearing out of 360
     int markerID; // 0 means no marker
 } Robot;
 
@@ -20,6 +20,7 @@ typedef struct block
 } Block; 
 
 
+// Data Strucutres
 // Stack data structure for robert's movement memory (ChatGPT, 2023)
 typedef struct StackNode {
     int data;
@@ -89,17 +90,13 @@ int isInside(struct Node* head, int x, int y) {
     return 0;
 }
 void resetList(struct Node** head) {
-    // Free the memory of all nodes
     struct Node* current = *head;
     struct Node* next;
-    
     while (current != NULL) {
         next = current->next;
         free(current);
         current = next;
     }
-
-    // Set the head to NULL
     *head = NULL;
 }
 
@@ -125,6 +122,9 @@ Stack* movementStack; // Keeps track of its last moves
 double radian(double degrees){
     return (degrees * (M_PI / 180));
 }
+
+
+// Drawing functions
 
 void drawBackground(){
     background();
@@ -193,6 +193,7 @@ void drawRobot(int offset){
     offset = offset * rectSize / 10;
 
     // Drawing the robot
+    // Note: everthing is relative to rectSize because the robot scales up and down depending on how big the grid is
     int trigHeight = rectSize * 0.8; 
     xCoords[0] = (centreX);
     yCoords[0] = (centreY - trigHeight / 2);
@@ -233,7 +234,7 @@ Block* initBlocks(char *wallLocations){
     Block *Blocks;
     Blocks = (Block*)malloc(sizeof(Block)*(numberOfWalls+1)); // home square is also in this array since it is a background object
 
-    // Populating the walls by separating coordinates from Str
+    // Populating the walls by separating coordinates from Str input
     char *token = strtok(wallLocations, "."); 
     for(int i = 0; i < numberOfWalls + 1; i ++){
         Block temp = {0, 0};
@@ -277,7 +278,8 @@ Robot nextPosition(){
 }
 
 
-// The required robot functions 
+// Robot functions 
+
 void forward(){
     for(int i = 1; i < 11; i++){
         drawRobot(i); // Draw the robot with increasing offsets to animate moving forward
@@ -357,7 +359,7 @@ int isCarryingAMarker(){
 //-------------------------
 
 
-// Solution methods
+// Algorithm functions
 
 void goHome(){
     // Retraces the moves back to the home square
@@ -477,7 +479,7 @@ void complexSolve(int step){
                 Block temp = {guessRobert.x, guessRobert.y};
                 append(&visitedList, temp);
 
-                complexSolve(0); // Call the search again in this new block
+                complexSolve(0); // Call the search again in the new coordinate
             }else{
                 right(); // Turn right to check new path
                 guessRobert.direction += 90;
@@ -554,36 +556,7 @@ int main(int argc, char **argv){
     return 0; 
 }
 
-
 /*
-    The logic of the complexSolve() algorithm is as follows:
-    1. Check if we are on a marker, if so pick up and go home
-    2. If not, turn left 
-    3. Check if you can move forward
-    4. If yes, move forward and call yourself again (resulting in another left turn)
-    5. If no, turn right and try the same
-    6. If you still cannot move forward after 2 right turns, go back to the block you were last on
-    7. Since the function had called itself before the previous function turned right twice, returning the function 
-       will cause the previous instance to turn right, and try this path instead.
-    8. If it can move forward after this right turn, the robot goes to another path
-       if it fails to move forward after 2 turns again, it moves back another block
-    
-    Essentially I treat every block on the grid as a junction in a maze, and search through every possible option in a grid,
-    while avoiding blocks I have already visited, or blocks like walls and home. 
-
-    This algorithm therefore only uses the 1 sensor that the robot has access to (check forward), and information it can
-    store like which moves it has made. Using these moves it can store its direction and the positions it visited relative to where 
-    it was initially placed. Hence this robot stays true to real life and does not use any information from within the code to solve 
-    the puzzle, which was my goal.
-*/
-
-/*
-    My trial input values:
-    waitTime = 20; 
-    gridSize = 8; 
-    screenResolutionY = 982; 
-    char wallLocations[] = "-.1.0.1.1.1.3.3.0.3.1.3.2.3.3";
-    char markerLocations[] = "-.5.5.0.6";
-
+    Trial input values: 
     ./main 20 8 982 -.1.0.1.1.1.3.3.0.3.1.3.2.3.3 -.5.5.0.6 | java -jar drawapp.jar
 */
