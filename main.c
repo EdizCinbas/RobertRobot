@@ -4,13 +4,13 @@
 #include <string.h>
 #include "graphics.h"
 
-// Robot Required Structs
+// Custom Structs
 typedef struct robot
 {
     int x;
     int y;
     int direction;
-    int markerID;
+    int markerID; // 0 means no marker
 } Robot;
 
 typedef struct block
@@ -106,17 +106,20 @@ void resetList(struct Node** head) {
 
 // Robot Code
 
-/* 
-Globally used variables declared here:
-The globalisation of these variables is a deliberate choice. These could just as well be 
-passed into each function. However they are so often used that having these be global makes
-the code neater and also more efficient.
-*/
+// Some variables are deliberately declared globally to keep the code neater and more efficient. 
+
+// Drawing function variables, solution algorithm does not have access, as a real robot would not know these.
 int rectSize, buffer, gridSize, waitTime, numberOfWalls, numberOfMarkers, markersRetrieved; 
 Robot *robertPtr;
 Block *blocksPtr;
 Block *markerPtr;
-Stack* movementStack;
+
+
+// These are the variables the robot has access to. No information is given to the robot about surroundings or itself. 
+Robot guessRobert = {0, 0, 0, 0}; // Keeps track of its 'guess' position which is the relative position taking home as (0,0)
+struct Node* visitedList = NULL; // Keeps track of the coordinates its 'guess' position has been to
+Stack* movementStack; // Keeps track of its last moves
+
 
 
 double radian(double degrees){
@@ -144,11 +147,10 @@ void drawBackground(){
 
 void drawMarker(int offset){
     setColour(lightgray);
-    // If being carried, circle, if not, square
     int marker = robertPtr->markerID;
     for(int i = 0; i < numberOfMarkers; i++){
-        if(!(markerPtr[i].x == blocksPtr[0].x && markerPtr[i].y == blocksPtr[0].y)){
-            if(marker-1 == i){
+        if(!(markerPtr[i].x == blocksPtr[0].x && markerPtr[i].y == blocksPtr[0].y)){ // Draw if marker is not home
+            if(marker-1 == i){ // If being carried, circle
                 int direction = robertPtr->direction; 
                 int x = buffer + rectSize*markerPtr[i].x + rectSize/20;
                 int y = buffer + rectSize*markerPtr[i].y + rectSize/20;
@@ -165,7 +167,7 @@ void drawMarker(int offset){
                 }
                 
                 fillOval(x, y, 18*rectSize/20, 18*rectSize/20);
-            }else{
+            }else{ // If not, square
                 fillRect(buffer+rectSize*markerPtr[i].x+1, buffer+rectSize*markerPtr[i].y+1, rectSize-1, rectSize-1);
             }
         }
@@ -227,9 +229,9 @@ void drawRobot(int offset){
 }
 
 
-Block* initBlocks(char wallLocations[]){
+Block* initBlocks(char *wallLocations){
     Block *Blocks;
-    Blocks = (Block*)malloc(sizeof(Block)*(numberOfWalls+1));
+    Blocks = (Block*)malloc(sizeof(Block)*(numberOfWalls+1)); // home square is also in this array since it is a background object
 
     // Populating the walls by separating coordinates from Str
     char *token = strtok(wallLocations, "."); 
@@ -243,10 +245,9 @@ Block* initBlocks(char wallLocations[]){
     return Blocks;
 }
 
-Block* initMarkers(char markerLocations[]){
+Block* initMarkers(char *markerLocations){
     Block *Markers;
     Markers = (Block*)malloc(sizeof(Block)*(numberOfMarkers));
-    // Populating the walls by separating coordinates from Str
 
     /* Note: This array indexes at 0, but the markerID 0 is used as 'No Markers'.
     Thus when acessing this array 'MarkerID - 1' is used, and when returning, 'index + 1' */
@@ -279,7 +280,7 @@ Robot nextPosition(){
 // The required robot functions 
 void forward(){
     for(int i = 1; i < 11; i++){
-        drawRobot(i);
+        drawRobot(i); // Draw the robot with increasing offsets to animate moving forward
     }
     *robertPtr = nextPosition();
     if(robertPtr->markerID){
@@ -290,14 +291,14 @@ void forward(){
 
 void left(){
     for(int i = 0; i < 18; i++){
-        robertPtr->direction -= 5;
+        robertPtr->direction -= 5; // Draw the robot with increasing direction to animate rotation
         drawRobot(0);
     }
 }
 
 void right(){
     for(int i = 0; i < 18; i++){
-        robertPtr->direction += 5;
+        robertPtr->direction += 5; 
         drawRobot(0);
     }
 }
@@ -314,7 +315,7 @@ int atHome(){
 int atMarker(){
     for(int i = 0; i < numberOfMarkers; i++){
         if((markerPtr[i].x == robertPtr->x && markerPtr[i].y == robertPtr->y) && !(markerPtr[i].x == blocksPtr[0].x && markerPtr[i].y == blocksPtr[0].y)){
-            return i+1;
+            return i+1; // the markerID is 'index + 1' as noted in init
         }
     }
     return 0;
@@ -334,6 +335,8 @@ void dropMarker(){
 }
 
 int canMoveForward(){
+    // Note: this method does not differentiate between wall or out of bounds, as a real robot would not know
+
     Robot nextPos = nextPosition();
     // Check it is within the grid
     if(nextPos.x < 0 || nextPos.x >= gridSize || nextPos.y < 0 || nextPos.y >= gridSize){
@@ -383,8 +386,8 @@ void goHome(){
     right();
 }
 
-// This was the first solution for up to stage 3, without using dynamic memory
 void simpleSolve(){
+    // This was the first solution for up to stage 3, without using dynamic memory
     if(atMarker()){
         pickUpMarker();
         goHome();
@@ -404,7 +407,7 @@ void simpleSolve(){
 } 
 
 void goBack(int step){
-    // Goes back 1 square
+    // Goes back step amount of squares (but only used to go back 1 at a time)
     while(movementStack->top != NULL && step){
         int movement = pop(movementStack);
         if(movement == 1){
@@ -416,20 +419,15 @@ void goBack(int step){
     left();
 }
 
-
-/*
-The complexSolve robot keeps track of its own relative positioning and the coordinates it has visited.
-This position is relative to the home and always starts at (0, 0). This information is deliberately separate from
-the robert values in the drawing program because a real life robot would not have access to these.
-
-True to real life, the robot fills in the infomation only from what it can see infront of it.
-*/
-
-Robot guessRobert = {0, 0, 0, 0};
-struct Node* visitedList = NULL;
+void guessRobertReset(){
+    guessRobert.x = 0;
+    guessRobert.y = 0;
+    guessRobert.direction = 0;
+    resetList(&visitedList);
+}
 
 void guessRobertMove(){
-    // Moves the robot's own relative position according to its relative direction.
+    // Moves the robot's relative position according to its relative direction.
     guessRobert.direction = (guessRobert.direction + 360) % 360;
     if(guessRobert.direction == 0){
         guessRobert.y += 1;
@@ -459,17 +457,16 @@ Robot guessRobertNext(){
 }
 
 void complexSolve(int step){
-
     if(atMarker()){
         pickUpMarker();
         return;
     }else{
-        if(step == 0){
+        if(step == 0){ // Step 0 means we have not checked any paths from the current square
             left();
             guessRobert.direction -= 90;
             push(movementStack, 2); 
         }
-        while(step < 3 && !isCarryingAMarker()){
+        while(step < 3 && !isCarryingAMarker()){ // Step 3 means we have checked every path from the current square
             if(canMoveForward() && !(nextPosition().x == blocksPtr[0].x && nextPosition().y == blocksPtr[0].y) && !isInside(visitedList, guessRobertNext().x, guessRobertNext().y)){
                 forward();
                 push(movementStack, 1);
@@ -478,15 +475,15 @@ void complexSolve(int step){
                 Block temp = {guessRobert.x, guessRobert.y};
                 append(&visitedList, temp);
 
-                complexSolve(0);
+                complexSolve(0); // Call the search again in this new block
             }else{
-                right();
+                right(); // Turn right to check new path
                 guessRobert.direction += 90;
                 push(movementStack, 3);
                 step += 1;
             }
         }
-        if(!isCarryingAMarker()){
+        if(!isCarryingAMarker()){ // If every path has been checked, robot retraces its steps to find a new path
             guessRobertMove();
             guessRobert.direction -= 180;
             goBack(1);
@@ -496,36 +493,38 @@ void complexSolve(int step){
 }
 
 
-int main(void){
+int main(int argc, char **argv){
     int screenResolutionY, drawableSize;
     long tempLength; // Used for grabbing string lenght
 
-    waitTime = 5; 
     markersRetrieved = 0;
     
     // Input Parameters
-    screenResolutionY = 982; 
-    gridSize = 8; 
-    char wallLocations[] = "-.1.0.1.1.1.3.3.0.3.1.3.2.3.3";
-    char markerLocations[] = "-.5.5.0.6";
+    if (argc != 6){
+        return 0;
+    }
 
+    waitTime = atoi(argv[1]); 
+    gridSize = atoi(argv[2]); 
+    screenResolutionY = atoi(argv[3]); 
 
     // Calculated Parameters
     drawableSize = screenResolutionY - 210; // 210 pixels of the screen is drawApp unusable space
     rectSize = drawableSize / (gridSize+1);
     buffer = ((drawableSize % rectSize) + rectSize) / 2; 
 
-    tempLength = strlen(wallLocations);
+
+    tempLength = strlen(argv[4]);
     numberOfWalls = ((tempLength - 1) / 4) - 1;
 
-    tempLength = strlen(markerLocations);
+    tempLength = strlen(argv[5]);
     numberOfMarkers = (tempLength - 1) / 4;
 
     // Environment Set-Up
-    Block *Blocks = initBlocks(wallLocations);
+    Block *Blocks = initBlocks(argv[4]);
     blocksPtr = Blocks;
 
-    Block *Markers = initMarkers(markerLocations);
+    Block *Markers = initMarkers(argv[5]);
     markerPtr = Markers;
 
     Robot robert = {Blocks[0].x, Blocks[0].y, 0, 0};
@@ -540,17 +539,49 @@ int main(void){
     // Algorithm
     movementStack = createStack();
     while(markersRetrieved != numberOfMarkers){
+        guessRobertReset(); // Reset its own relativistic position and memory
         complexSolve(0);
         goHome();
-        guessRobert.x = 0;
-        guessRobert.y = 0;
-        guessRobert.direction = 0;
-        resetList(&visitedList);
     } 
 
+    // Exiting program
     free(movementStack);
     free(visitedList);
     free(blocksPtr);
     free(markerPtr);
     return 0; 
 }
+
+
+/*
+    The logic of the complexSolve() algorithm is as follows:
+    1. Check if we are on a marker, if so pick up and go home
+    2. If not, turn left 
+    3. Check if you can move forward
+    4. If yes, move forward and call yourself again (resulting in another left turn)
+    5. If no, turn right and try the same
+    6. If you still cannot move forward after 2 right turns, go back to the block you were last on
+    7. Since the function had called itself before the previous function turned right twice, returning the function 
+       will cause the previous instance to turn right, and try this path instead.
+    8. If it can move forward after this right turn, the robot goes to another path
+       if it fails to move forward after 2 turns again, it moves back another block
+    
+    Essentially I treat every block on the grid as a junction in a maze, and search through every possible option in a grid,
+    while avoiding blocks I have already visited, or blocks like walls and home. 
+
+    This algorithm therefore only uses the 1 sensor that the robot has access to (check forward), and information it can
+    store like which moves it has made. Using these moves it can store its direction and the positions it visited relative to where 
+    it was initially placed. Hence this robot stays true to real life and does not use any information from within the code to solve the puzzle,
+    which was my goal.
+*/
+
+/*
+    My trial input values:
+    waitTime = 20; 
+    gridSize = 8; 
+    screenResolutionY = 982; 
+    char wallLocations[] = "-.1.0.1.1.1.3.3.0.3.1.3.2.3.3";
+    char markerLocations[] = "-.5.5.0.6";
+
+    ./main 20 8 982 -.1.0.1.1.1.3.3.0.3.1.3.2.3.3 -.5.5.0.6 | java -jar drawapp.jar
+*/
