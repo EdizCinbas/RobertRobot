@@ -8,7 +8,7 @@ The code is split into:
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Robot functions  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Algorithm functions  
 
-The variables at the top of the code are declared globally by choice in order to make the code neater. In addition, each variables does not need to be copied into a parameter multiple times over, which makes the code fractionally more efficient as well.  
+The variables at the top of the code are declared globally by choice in order to make the code neater. In addition, each variable does not need to be copied into a parameter multiple times over, which makes the code fractionally more efficient as well.  
 
 The large bulk of programming logic to draw the animations is done in the drawing functions. The main function will draw the initial grid, walls, and home, by calling the drawBackground(). The marker and the robot are the in the foreground which means they get redrawn each time the robot moves.  
 
@@ -69,5 +69,7 @@ With the parameters in place an example run code would be:
 ```
 ./main 20 8 982 -.1.0.1.1.1.3.3.0.3.1.3.2.3.3 -.5.5.0.6 | java -jar drawapp.jar
 ```
+
+There is no input validation in this program as it was not in the scope of the project. Please make sure the input parameters are given in the requested format to ensure the code working. 
 
 ## Thank you
