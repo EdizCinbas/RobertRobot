@@ -116,7 +116,7 @@ Block *markerPtr;
 
 
 // These are the variables the robot has access to. No information is given to the robot about surroundings or itself. 
-Robot guessRobert = {0, 0, 0, 0}; // Keeps track of its 'guess' position which is the relative position taking home as (0,0)
+Robot guessRobert = {0, 0, 0, 0}; // Keeps track of its 'guess' position which is the relative position taking home to be (0,0)
 struct Node* visitedList = NULL; // Keeps track of the coordinates its 'guess' position has been to
 Stack* movementStack; // Keeps track of its last moves
 
@@ -419,6 +419,8 @@ void goBack(int step){
     left();
 }
 
+
+// guessRobert is where robert 'guesses' itself to be, relative to where it was initially placed
 void guessRobertReset(){
     guessRobert.x = 0;
     guessRobert.y = 0;
@@ -571,8 +573,8 @@ int main(int argc, char **argv){
 
     This algorithm therefore only uses the 1 sensor that the robot has access to (check forward), and information it can
     store like which moves it has made. Using these moves it can store its direction and the positions it visited relative to where 
-    it was initially placed. Hence this robot stays true to real life and does not use any information from within the code to solve the puzzle,
-    which was my goal.
+    it was initially placed. Hence this robot stays true to real life and does not use any information from within the code to solve 
+    the puzzle, which was my goal.
 */
 
 /*
