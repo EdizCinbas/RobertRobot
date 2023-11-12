@@ -317,7 +317,7 @@ int atHome(){
 int atMarker(){
     for(int i = 0; i < numberOfMarkers; i++){
         if((markerPtr[i].x == robertPtr->x && markerPtr[i].y == robertPtr->y) && !(markerPtr[i].x == blocksPtr[0].x && markerPtr[i].y == blocksPtr[0].y)){
-            return i+1; // the markerID is 'index + 1' as noted in init
+            return i+1; // the markerID is 'index + 1' as noted in initMarkers
         }
     }
     return 0;
@@ -541,7 +541,7 @@ int main(int argc, char **argv){
 
 
     // Algorithm
-    movementStack = createStack();
+    movementStack = createStack(); // 1: forward, 2: left, 3: right 
     while(markersRetrieved != numberOfMarkers){
         guessRobertReset(); // Reset its own relativistic position and memory
         complexSolve(0);
